@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Log files
+*.log
+
+# VS Code settings
+.vscode/
+# Project files from JetBrains IDEs
+.idea/
+
+# macOS metadata file
+.DS_Store
+# Windows Explorer thumbnail cache
+Thumbs.db
+
+# Build output
+dist/
+build/
+
+# Temporary files
+*.tmp
+
+# Environment variables
+.env
