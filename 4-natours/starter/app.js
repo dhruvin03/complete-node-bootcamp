@@ -1,13 +1,17 @@
 const fs = require('fs');
 const express = require('express');
+const morgan = require('morgan');
 
 const app = express();
 const port = 3000;
 
+/***** Reading tours file *****/
 const tours = JSON.parse(
   fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`),
 );
 
+/***** Middleware *****/
+app.use(morgan('dev'));
 app.use(express.json());
 app.use((req, res, next) => {
   const start = Date.now();
@@ -31,6 +35,7 @@ app.use((req, res, next) => {
   next();
 });
 
+/***** Route Handlers *****/
 const getAllTours = (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -124,18 +129,61 @@ const deleteTour = (req, res) => {
   });
 };
 
-//app.get('/api/v1/tours', getAllTours);
-//app.get('/api/v1/tours/:id', getTour);
-//app.post('/api/v1/tours', createTour);
-//app.patch('/api/v1/tours/:id', updateTour);
-//app.delete('/api/v1/tours/:id', deleteTour);
+const getAllUsers = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'This route is not yet defined!'
+  });
+};
 
-app.route('/api/v1/tours').get(getAllTours).post(createTour);
-app
-  .route('/api/v1/tours/:id')
+const getUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'This route is not yet defined!'
+  })
+};
+
+const createUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'This route is not yet defined!'
+  })
+};
+
+const updateUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'This route is not yet defined!'
+  })
+};
+
+const deleteUser = (req, res) => {
+  res.status(500).json({
+    status: 'error',
+    message: 'This route is not yet defined!'
+  })
+};
+
+/***** Routes *****/
+const tourRouter = express.Router();
+const userRouter = express.Router();
+
+tourRouter.route('/').get(getAllTours).post(createTour);
+tourRouter
+  .route('/:id')
   .get(getTour)
   .patch(updateTour)
   .delete(deleteTour);
+
+userRouter.route('/').get(getAllUsers).post(createUser);
+userRouter
+  .route('/:id')
+  .get(getUser)
+  .patch(updateUser)
+  .delete(deleteUser);
+
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
 
 app.listen(port, () => {
   console.log(`App is running on port ${port}`);
