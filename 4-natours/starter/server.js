@@ -9,13 +9,9 @@ const db_connection = process.env.DB.replace(
 );
 
 mongoose
-  .connect(db_connection, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('DB connection successful!'));
+  .connect(db_connection)
+  .then(() => console.log('DB connection successful!'))
+  .catch((err) => console.log('Connection Error: ', err));
 
 const port = process.env.PORT || 8080;
 
