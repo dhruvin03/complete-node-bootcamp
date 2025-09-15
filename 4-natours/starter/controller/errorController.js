@@ -20,6 +20,8 @@ const handleValidationErrorDB = (err) => {
   return new AppError(message, 400);
 };
 
+const handleJWTError = () => new AppError('Invalid Token!', 401);
+
 const sendErrDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -49,12 +51,13 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV == 'development') {
     sendErrDev(err, res);
   } else if (process.env.NODE_ENV == 'production') {
-    console.log('Error: ', err);
     let error = { ...err };
 
     if (err.name == 'CastError') error = handleCastErrorDB(error);
     if (err.code == 11000) error = handleDuplicateFieldsDB(error);
     if (err.name == 'ValidationError') error = handleValidationErrorDB(error);
+    if (err.name == 'JsonWebTokenError' || err.name == 'TokenExpiredError')
+      error = handleJWTError();
     sendErrProd(error, res);
   }
 };
