@@ -12,6 +12,30 @@ const signToken = (id) => {
   });
 };
 
+const createSignToken = (user, statusCode, res) => {
+  const token = signToken(user['_id']);
+  const cookieOption = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV == 'production') cookieOption.secure = true;
+
+  res.cookie('jwt', token, cookieOption);
+
+  // Remove pasword field
+  user.password = undefined;
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   //const newUser = await User.create(req.body);
   const newUser = await User.create({
@@ -23,15 +47,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     role: req.body.role,
   });
 
-  const token = signToken(newUser['_id']);
-
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  });
+  createSignToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -49,12 +65,7 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError('Incorrect email or password provided', 401));
   }
 
-  const token = signToken(user['_id']);
-
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  createSignToken(user, 200, res);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -154,14 +165,14 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   const user = await User.findOne({
     passwordResetToken: hashedToken,
-    passwordResetExpiresAt: { $gt: Date.now() }
+    passwordResetExpiresAt: { $gt: Date.now() },
   });
 
   //const user = await User.findOne({
-    //passwordResetToken: hashToken,
-    //passwordResetExpiresAt: { $gt: Date.now() },
+  //passwordResetToken: hashToken,
+  //passwordResetExpiresAt: { $gt: Date.now() },
   //});
-  console.log("User: ", user);
+  console.log('User: ', user);
 
   if (!user) {
     return next(new AppError('Token is invalid or has expired', 500));
@@ -175,10 +186,45 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   // Log the user IN, and send JWT token
-  const token = signToken(user['_id']);
+  createSignToken(user, 200, res);
+});
 
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const { oldPassword, newPassword, newPasswordConfirm } = req.body;
+
+  if (!oldPassword) {
+    return next(
+      new AppError('Please provide old password to update new password', 400),
+    );
+  }
+  if (!newPassword || !newPasswordConfirm) {
+    return next(new AppError('Please provide updated password', 400));
+  }
+
+  // 1) Get user from collection
+  const user = await User.findOne({ email: req.user.email }).select(
+    '+password',
+  );
+
+  if (!user) {
+    return next(new AppError('User not found!', 401));
+  }
+
+  // 2) check if current POSTed password is correct
+  if (!(await user.correctPassword(oldPassword, user.password))) {
+    return next(
+      new AppError(
+        'Current password is incorrect! Please provide correct password to update password.',
+        401,
+      ),
+    );
+  }
+
+  // 3) If so update new password
+  user.password = newPassword;
+  user.passwordConfirm = newPasswordConfirm;
+  await user.save();
+
+  // 4) Log user in, send JWT Token
+  createSignToken(user, 200, res);
 });
